@@ -1,215 +1,234 @@
-# ArtMirror 画镜（ComfyUI 图库插件）
+<div align="center">
+  <img src="frontend/assets/icons/icon-256.png" width="120" alt="ArtMirror" />
+  <h1>ArtMirror</h1>
+  <hr />
+  <p>
+    <strong>A local-first image &amp; prompt asset manager for ComfyUI.</strong><br />
+    Browse, organize and search your generated images, parse embedded workflow metadata, and enhance everything with AI.
+  </p>
+  <p><strong>English</strong> · <a href="README_CN.md">简体中文</a></p>
+  <p>
+    <a href="https://github.com/ShenZiLi/comfyui-gallery"><img src="https://img.shields.io/badge/version-1.0.0-blue.svg?style=flat" alt="version" /></a>
+    <a href="https://github.com/ShenZiLi/comfyui-gallery"><img src="https://img.shields.io/github/stars/ShenZiLi/comfyui-gallery?style=flat&amp;color=yellow" alt="stars" /></a>
+    <img src="https://img.shields.io/badge/license-MIT-green.svg?style=flat" alt="license" />
+    <img src="https://img.shields.io/badge/python-3.11%2B-3776AB.svg?style=flat" alt="python" />
+    <img src="https://img.shields.io/badge/ComfyUI-custom%20node-FF8A00.svg?style=flat" alt="ComfyUI" />
+  </p>
+  <p>
+    <a href="https://github.com/ShenZiLi/comfyui-gallery">Repository</a> ·
+    <a href="#installation">Install</a> ·
+    <a href="#features">Features</a> ·
+    <a href="#web-app-optional">Web App</a> ·
+    <a href="docs/技术文档.md">Docs</a>
+  </p>
+</div>
 
-在 ComfyUI 侧边栏内嵌一个「图库」tab，用于**浏览、管理、检索本地 ComfyUI 产出图片**。
-
-自动解析 PNG 内嵌工作流 meta，并提供 AI 增强能力：反推提示词、中英互译、AI 评分、AI 工作流解析。
-
-![ComfyUI 侧边栏图库 tab](docs/screenshots/index.png)
+![ArtMirror gallery tab in the ComfyUI sidebar](docs/screenshots/index.png)
 
 ***
 
-## 项目介绍
+## Overview
 
-* **图片资产管理**：后台定时扫描 ComfyUI 输出目录（或任意本地图片目录），把图片引用与 meta 存入 SQLite，不存图片字节。
+ArtMirror embeds a **Gallery** tab into the ComfyUI sidebar for **browsing, managing and searching locally generated ComfyUI images**. It automatically parses the workflow metadata embedded in PNG files and adds AI capabilities: prompt interrogation, EN↔ZH translation, AI rating and AI workflow parsing.
 
-* **Workflow meta 解析**：解析 ComfyUI PNG 内嵌的 workflow / prompt 图，提取主模型、LoRA、VAE、采样参数与多段提示词。
+* **Image asset management**: a background job periodically scans the ComfyUI output directory (or any local image folder) and stores image references plus metadata into SQLite — image bytes are never copied.
 
-* **AI 增强**：接入 OpenAI 兼容接口（可混搭不同厂商），支持提示词反推、中英互译、AI 多维度评分、AI 工作流解析。
+* **Workflow metadata parsing**: reads the `workflow` / `prompt` graphs embedded in ComfyUI PNGs and extracts the base model, LoRAs, VAE, sampling parameters and multi-segment prompts.
 
-* **多模式浏览**：平铺 / 沉浸 / 聚合三种预览视图，配合目录筛选、标签筛选、关键词搜索与多维排序。
+* **AI enhancement**: plug in any OpenAI-compatible endpoint (mix and match providers) for prompt interrogation, EN↔ZH translation, multi-dimension AI rating and AI workflow parsing.
 
-* **个人单机工具**：无鉴权，后端仅在 `127.0.0.1` 进程内监听临时端口运行；插件数据落 `ComfyUI/user/artmirror/`。
+* **Multi-mode browsing**: flat / immersive / aggregate preview modes, combined with folder filters, tag filters, keyword search and multi-dimensional sorting.
+
+* **Personal single-machine tool**: no authentication; the backend runs inside the ComfyUI process on a temporary `127.0.0.1` port. Plugin data is stored under `ComfyUI/user/artmirror/`.
 
 ***
 
-## 安装指南
+## Installation
 
-本插件是标准 ComfyUI 自定义节点包，安装流程与 ComfyUI 节点库（Custom Nodes）一致。以下三种方式任选其一。
+ArtMirror is a standard ComfyUI custom node pack — the installation flow is the same as any other node pack. Pick one of the three options below.
 
-### 方式一：手动安装（custom\_nodes）
+### Option 1: Manual install (custom\_nodes)
 
-1. 把插件放入 `custom_nodes/` 目录，两种做法任选：
+1. Put the pack into `custom_nodes/`, either way:
 
-    * **git clone**（推荐，便于后续 `git pull` 升级）：
+   * **git clone** (recommended — easy to upgrade later with `git pull`):
 
-      ```bash
-      cd ComfyUI/custom_nodes
-      git clone https://github.com/ShenZiLi/comfyui-gallery.git ComfyUI-ArtMirror
-      ```
+     ```bash
+     cd ComfyUI/custom_nodes
+     git clone https://github.com/ShenZiLi/comfyui-gallery.git ComfyUI-ArtMirror
+     ```
 
-    * **直接拷贝**：本插件目录**自包含**（已内置核心 `artmirror/` 与前端 `static/`），
-      整体拷为 `custom_nodes/ComfyUI-ArtMirror` 即可 —— **解压即用**
+   * **Copy the folder**: this pack is **self-contained** (core `artmirror/` and frontend `static/` are bundled).
+     Just copy it as `custom_nodes/ComfyUI-ArtMirror` — **unzip and run**.
 
-2. 依赖说明：
+2. Dependencies:
 
-    * 插件自带 `requirements.txt`，**ComfyUI 启动时会自动安装**（标准机制，首次联网约 1-3 分钟），多数情况无需手动处理
+   * The pack ships a `requirements.txt` which **ComfyUI installs automatically on startup** (standard mechanism, roughly 1–3 minutes on the first online run). In most cases nothing else is needed.
 
-    * 若自动安装失败，可在插件目录用 ComfyUI 的 Python 环境手动安装：
-      ```bash
-      pip install -r requirements.txt
-      ```
-      （依赖：`fastapi`、`uvicorn`、`sqlmodel`、`pillow`、`httpx` 等）
+   * If the automatic install fails, install manually with ComfyUI's Python environment while inside the pack folder:
+     ```bash
+     pip install -r requirements.txt
+     ```
+     (dependencies: `fastapi`, `uvicorn`, `sqlmodel`, `pillow`, `httpx`, …)
 
-    * 需要**完全离线**的安装包（不依赖 ComfyUI 联网装依赖）时，可用主仓库的 `build_plugin.py` 生成带 `_deps/` 的发布包（注意 `_deps` 编译型包须与 ComfyUI 的 Python 版本匹配，用 `--python` 指定）：
-      ```bash
-      uv run python scripts/build_plugin.py --out build/ComfyUI-ArtMirror --bundle-deps --python 3.12
-      ```
+   * For a fully **offline** package (no internet needed for dependency install), build a release bundle with `_deps/` using `build_plugin.py`. Note that compiled packages inside `_deps` must match ComfyUI's Python version — pass it via `--python`:
+     ```bash
+     uv run python scripts/build_plugin.py --out build/ComfyUI-ArtMirror --bundle-deps --python 3.12
+     ```
 
-3. 完全重启 ComfyUI（Desktop 或网页版），使插件被加载
+3. Fully restart ComfyUI (Desktop or web build) so the pack gets loaded.
 
-4. 左侧侧边栏点开「图库」tab，首次打开会自动在进程内启动后端并扫描 ComfyUI 输出目录
+4. Open the **Gallery (图库)** tab in the left sidebar — on first open the backend starts in-process and scans the ComfyUI output directory.
 
-### 方式二：ComfyUI-Manager 节点库安装（Registry 需已发布）
+### Option 2: ComfyUI-Manager (registry must be published)
 
-需先安装 [ComfyUI-Manager](https://github.com/ltdrdata/ComfyUI-Manager)（ComfyUI Desktop 通常已自带）。
+Requires [ComfyUI-Manager](https://github.com/ltdrdata/ComfyUI-Manager) (usually bundled with ComfyUI Desktop).
 
-1. 打开 ComfyUI，点击顶部 **Manager** 按钮，进入 **Custom Nodes Manager / 节点安装**
-2. 在顶部搜索框输入 `ArtMirror`（或 `ComfyUI-ArtMirror`），回车搜索
-3. 在结果中找到 **ArtMirror 图库 / ComfyUI-ArtMirror**，点击右侧 **Install / 安装**
-4. 等待下载与依赖安装完成，出现 **Install 成功提示**
-5. 点击 **Restart / 重启 ComfyUI**
-6. 重启后左侧侧边栏出现「图库」tab，即安装成功
+1. Open ComfyUI, click **Manager** in the top bar, go to **Custom Nodes Manager**
+2. Type `ArtMirror` (or `ComfyUI-ArtMirror`) into the search box and hit Enter
+3. Find **ArtMirror / ComfyUI-ArtMirror** in the results and click **Install**
+4. Wait for the download and dependency install to finish — you should see a success message
+5. Click **Restart** to restart ComfyUI
+6. The **Gallery (图库)** tab appears in the left sidebar after the restart — done
 
-> 说明：通过节点库安装需要插件已发布到 Comfy Registry。若仓库尚未发布，节点库内搜不到，请改用上方「方式一」手动安装。
+> Note: installing through the node registry requires the pack to be published to Comfy Registry. If it is not published yet the search returns nothing — use Option 1 instead.
 
-### 方式三：交给 AI Agent 安装（如 WorkBuddy）
+### Option 3: Let an AI agent install it (e.g. WorkBuddy)
 
-把下面这段提示词发给 AI 助手（WorkBuddy / Claude / Code 等 Agent），它会自动完成下载、安装与校验；把 `<你的 custom_nodes 路径>` 替换成你的 ComfyUI 实际路径即可。
+Send the prompt below to an AI assistant (WorkBuddy / Claude / Code and similar agents) and it will handle download, install and verification. Replace `<your custom_nodes path>` with your real ComfyUI path.
 
-> 安装 ComfyUI 插件「ArtMirror 图库」（ComfyUI-ArtMirror）：
+> Install the ComfyUI custom node pack "ArtMirror" (ComfyUI-ArtMirror):
 >
-> 1. 把仓库 `https://github.com/ShenZiLi/comfyui-gallery.git` 克隆到 `ComfyUI/custom_nodes/ComfyUI-ArtMirror`（custom\_nodes 路径：`<你的 custom_nodes 路径>`；若不存在则新建）
-> 2. 项目自带 `_deps/` 本地依赖，一般无需安装；若 ComfyUI 运行环境报缺少依赖，按 `pyproject.toml` 的 `[project].dependencies` 用 ComfyUI 的 Python 环境安装
-> 3. 引导我**完全重启** ComfyUI
-> 4. 重启后确认左侧侧边栏出现「图库」tab；若白屏 / 503，检查 `ComfyUI/user/artmirror/` 目录与 ComfyUI 控制台日志并修复
+> 1. Clone `https://github.com/ShenZiLi/comfyui-gallery.git` into `ComfyUI/custom_nodes/ComfyUI-ArtMirror` (custom\_nodes path: `<your custom_nodes path>`; create it if missing)
+> 2. The pack bundles local `_deps/`, so dependency installation is usually unnecessary. If ComfyUI reports missing dependencies, install them with ComfyUI's Python environment according to `[project].dependencies` in `pyproject.toml`
+> 3. Walk me through a **full restart** of ComfyUI
+> 4. After the restart, confirm the **Gallery (图库)** tab shows up in the left sidebar. If it is blank or returns 503, inspect the `ComfyUI/user/artmirror/` directory and the ComfyUI console log, then fix the issue
 
-### 使用说明
+### Usage
 
-* 侧边栏出现「图库」tab；若同时安装了独立版画镜，两者功能一致、数据各自独立
+* The **Gallery (图库)** tab shows up in the sidebar. If the standalone ArtMirror app is installed as well, both offer the same features with independent data.
 
-* 数据位置：`ComfyUI/user/artmirror/`（数据库 + 缩略图 + 日志）
+* Data location: `ComfyUI/user/artmirror/` (database + thumbnails + logs)
 
-* 默认扫描根：ComfyUI 输出目录；可在 tab 内设置页修改 / 增加扫描目录
+* Default scan root: the ComfyUI output directory; change or add scan folders in the settings page inside the tab
 
-* 配置大模型后请点击「测试连接」验证，即可启用反推 / 翻译 / 评分等 AI 功能
-
-***
-
-## 数据与存储
-
-* SQLite：只存图片引用（绝对路径 + SHA-256）与 meta，不存图片字节；缩略图以 `<sha>.webp` 缓存
-
-* 按规范化绝对路径区分图片资产；SHA-256 用于内容识别与缩略图缓存，删除走系统废纸篓（软删 + 物理回收）
-
-* 清空数据 = 删除 `user/artmirror/` 目录
-
-## 技术栈
-
-| 层  | 技术                                                                                       |
-| -- | ---------------------------------------------------------------------------------------- |
-| 后端 | Python 3.11+ · FastAPI · SQLModel(SQLite) · Pillow · httpx，随 ComfyUI 进程内启动（uvicorn 临时端口） |
-| 前端 | 无构建静态页 · Alpine.js（本地 vendor）· 手写 HTML/CSS/JS                                            |
-| 集成 | `/artmirror/*` 反向代理到进程内 FastAPI；`WEB_DIRECTORY` 注册侧边栏扩展                                  |
+* After configuring an LLM, click **Test connection** to enable interrogation / translation / rating
 
 ***
 
-## Web 端（可选，辅助使用）
+## Data & Storage
 
-不装 ComfyUI 时，仓库也可作为独立 Web 工具运行（浏览 / 管理任意本地图片目录，功能一致，数据独立于插件）。
+* SQLite stores only image references (absolute path + SHA-256) and metadata, never image bytes; thumbnails are cached as `<sha>.webp`
 
-| 平台 | 启动方式 |
-| --- | --- |
-| macOS | 双击 `start.command`（首次自动装依赖，完成后打开浏览器） |
-| Windows | 双击 `启动.bat`（自动装依赖，完成后打开浏览器） |
+* Images are identified by their normalized absolute path; SHA-256 is used for content identity and thumbnail caching. Deletion goes through the system trash (soft delete + physical recycle)
 
-手动启动（需已装 [uv](https://docs.astral.sh/uv/)）：
+* Wipe all data = delete the `user/artmirror/` directory
+
+## Tech Stack
+
+| Layer | Tech                                                                                                              |
+| ----- | ----------------------------------------------------------------------------------------------------------------- |
+| Backend | Python 3.11+ · FastAPI · SQLModel (SQLite) · Pillow · httpx — started in-process with ComfyUI (uvicorn on a temporary port) |
+| Frontend | Zero-build static pages · Alpine.js (local vendor) · hand-written HTML/CSS/JS                                     |
+| Integration | `/artmirror/*` reverse-proxied to the in-process FastAPI app; `WEB_DIRECTORY` registers the sidebar extension      |
+
+***
+
+## Web App (Optional)
+
+Without ComfyUI, the repository also runs as a standalone web tool (browse / manage any local image folder — same features, data independent from the plugin).
+
+| Platform | Launch |
+| -------- | ------ |
+| macOS | Double-click `启动Web端-Mac.command` (installs dependencies on first run, then opens the browser) |
+| Windows | Double-click `启动Web端-Win.bat` (installs dependencies, then opens the browser) |
+
+Manual launch (requires [uv](https://docs.astral.sh/uv/)):
 
 ```bash
 uv sync
 uv run uvicorn launchers.web.main:app --host 0.0.0.0 --port 8000
-# 访问 http://127.0.0.1:8000/gallery.html
+# open http://127.0.0.1:8000/gallery.html
 ```
 
-Web 端数据落仓库根 `data/`（SQLite + 缩略图），清空数据 = 删 `data/artmirror.db` 与 `data/thumbs/`。
+Web app data lives in `data/` at the repository root (SQLite + thumbnails). Wipe it = delete `data/artmirror.db` and `data/thumbs/`.
 
-## 功能介绍
+## Features
 
-以下截图均来自运行中的实例。
+All screenshots below come from a running instance.
 
-### 🖼️ 图库浏览
+### 🖼️ Gallery Browsing
 
-图库主页：顶部工具栏（导入 / 目录筛选 / 视图切换 / 排序 / 搜索 / 缩放），左栏目录树，主区域为卡片网格，卡片含缩略图、尺寸、文件大小、模型标签、AI 评分、提示词与操作入口。
+Gallery home: a top toolbar (import / folder filter / view switch / sorting / search / zoom), a folder tree on the left, and a card grid in the main area. Each card shows a thumbnail, dimensions, file size, model tags, AI score, prompt and action entries.
 
-![图库平铺视图](docs/screenshots/flat.png)
+![Gallery flat view](docs/screenshots/flat.png)
 
-* **三种预览模式**
+* **Three preview modes**
 
-    * **平铺**：卡片 + 提示词（信息最丰富）
+    * **Flat**: cards + prompts (most information)
 
-    * **沉浸**：纯图片墙（聚焦看图）
+    * **Immersive**: pure image wall (focus on looking)
 
-    * **聚合**：按相同 / 相似提示词分组（相似聚类阈值 0.92），一键复用一组图片的提示词
+    * **Aggregate**: grouped by identical / similar prompts (similarity threshold 0.92) — reuse a whole group's prompt with one click
 
-* **高清预览**：放大到列数 ≤ 4 时卡片自动切换为原图显示（HD 徽标提示）
+* **HD preview**: when zooming in to 4 columns or fewer, cards automatically switch to full-resolution images (HD badge)
 
-* **导入**：支持「导入图片 / 导入目录」；本地目录保持相对结构、并自动注册为扫描根
+* **Import**: import images or folders; local folders keep their relative structure and are registered as scan roots automatically
 
-* **页面动效**：模式切换 / 目录切换垂直翻页 / 搜索淡入淡出 / 跳转淡入淡出
+* **Page motion**: mode switching, vertical paging between folders, search fade-in and navigation fades
 
-![图库沉浸视图](docs/screenshots/gallery-immersive.webp)
+![Gallery immersive view](docs/screenshots/gallery-immersive.webp)
 
-![图库聚合视图](docs/screenshots/gallery-aggregate.webp)
+![Gallery aggregate view](docs/screenshots/gallery-aggregate.webp)
 
-### 🔍 检索与管理
+### 🔍 Search & Management
 
-* 目录筛选三模式同步、标签筛选（模型 / LoRA / VAE / 风格）、关键词搜索（匹配提示词 / 负向提示词 / 文件名，结果高亮）
+* Folder filter with three synchronized modes, tag filters (model / LoRA / VAE / style), keyword search across prompts, negative prompts and file names with highlighted results
 
-* 多维排序：时间 / AI 评分 / 人工评分
+* Multi-dimensional sorting: time / AI score / manual score
 
-* 大库性能：列表分页 + 无限滚动，万张图片流畅浏览
+* Large libraries: paginated lists with infinite scrolling — thousands of images scroll smoothly
 
-* 删除走系统废纸篓（可恢复）、复制图片、下载原图
+* Deletion goes to the system trash (recoverable), plus copy image and download original
 
-### 🖼️ 图片详情
+### 🖼️ Image Details
 
-点击卡片进入详情：左侧原图大图，右侧信息栏含提示词、模型与采样参数、评分。
+Click a card to open the details view: the original image on the left, an info panel on the right with prompts, model and sampling parameters, and scores.
 
-* **提示词**：原生 / 反推 / AI 三源切换、多段展示、点击段落直接复制、中英互译
+* **Prompts**: switch between native / interrogated / AI sources, multi-segment display, click a segment to copy it, EN↔ZH translation
 
-* **模型与参数**：主模型 / LoRA / VAE 标签、steps / cfg / sampler / scheduler / seed、预览 / 导出工作流（可拖回 ComfyUI 复现）
+* **Model & parameters**: base model / LoRA / VAE tags, steps / cfg / sampler / scheduler / seed, preview and export workflow (drag back into ComfyUI to reproduce)
 
-* **评分**：人工星级（1–5）+ AI 多维度评分（0–100 并附依据）
+* **Scoring**: manual star rating (1–5) + multi-dimension AI rating (0–100 with rationale)
 
-  ![图片详情页](docs/screenshots/image-detail.png)
+  ![Image details page](docs/screenshots/image-detail.png)
 
-### ✨ AI 增强
+### ✨ AI Enhancement
 
+* **EN↔ZH translation**: AI translation, persisted — existing translations switch instantly without another request
 
-* **中英互译**：AI 互译并持久化，已有译文直接切换、不重复请求
+* **AI prompt interrogation**: a vision model reads the image and reconstructs the prompt, comparable side by side with the native / AI-parsed prompt
 
-* **AI 反推提示词**：视觉模型读取图片反推，与原 / AI 解析提示词对照
+* **AI rating**: a vision model scores the image with rationale; the rating prompt is customizable in settings
 
-* **AI 评分**：视觉模型打分并给出依据，可在设置页自定义评分提示词
+![AI rating](docs/screenshots/image.png)
 
-![AI 评分](docs/screenshots/image.png)
+### ⚙️ Settings
 
-### ⚙️ 设置
+Configuration hub: scan folders, scanned folder management, import target folder, three LLM roles with connectivity tests, and custom AI prompts.
 
-配置中心：扫描目录、已扫描文件夹管理、导入保存目录、大模型三角色配置与连通性测试、AI 提示词自定义。
+* **Folder management**: register / remove scan roots; scanned folders show as chips that can be hidden or restored
 
+* **Import target folder**: set the destination for imported / dragged images (falls back to the app-managed data area when unset)
 
-* **目录管理**：注册 / 移除扫描根；扫描后文件夹 chips 展示，可隐藏 / 恢复
+* **LLMs**: independently configure text / vision / embedding roles (DeepSeek / Qwen / GLM / OpenAI / custom) with one-click concurrent connectivity tests
 
-* **导入保存目录**：配置导入 / 拖拽图片的目标目录（未配置回退应用数据自管区）
+* **AI prompts**: four prompt groups — interrogation, rating, translation and workflow parsing — are customizable
 
-* **大模型**：文本 / 视觉 / Embedding 三角色独立配置（支持 DeepSeek / Qwen / GLM / OpenAI / 自定义），一键并发测试连通性
-
-* **AI 提示词**：反推 / 评分 / 互译 / 工作流解析四组提示词可自定义
-
-![设置](docs/screenshots/settings.png)
+![Settings](docs/screenshots/settings.png)
 
 ***
 
-## 许可
+## License
 
 MIT
